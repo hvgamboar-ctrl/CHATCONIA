@@ -1,0 +1,42 @@
+// datos-demo.js: datos de ejemplo para probar el chat sin Supabase.
+// Son los mismos textos que carga el SQL de Supabase (chat_faq.sql).
+// Los productos y la promoción son inventados: solo sirven para la demostración.
+window.BLOQE_DEMO = {
+  faqs: [
+    { id: 1, tipo: "texto", pregunta: "¿Cuánto demora mi pedido?", orden: 10, en_menu: true,
+      palabras_clave: ["demora", "demoran", "demorar", "tarda", "tardan", "entrega", "entregan", "plazo", "cuando llega", "cuando me llega"],
+      respuesta: "En promedio, desde que se publica el bloque hasta la entrega pasan 4.5 días.", respuesta_sin_datos: null },
+    { id: 2, tipo: "texto", pregunta: "¿Cómo se paga?", orden: 20, en_menu: true,
+      palabras_clave: ["pago", "pagar", "pagan", "paga", "yape", "efectivo", "tarjeta", "saldo"],
+      respuesta: "La reserva se paga por Yape o en efectivo y el saldo contra entrega.", respuesta_sin_datos: null },
+    { id: 3, tipo: "texto", pregunta: "¿Los productos son originales?", orden: 30, en_menu: true,
+      palabras_clave: ["original", "originales", "replica", "replicas", "falso", "falsos", "autentico", "autenticos", "oficial", "oficiales"],
+      respuesta: "Sí. Todos los productos se compran directamente a distribuidores oficiales, por lo que son originales.", respuesta_sin_datos: null },
+    { id: 4, tipo: "productos", pregunta: "¿Qué productos hay ahora?", orden: 40, en_menu: true,
+      palabras_clave: ["productos", "producto", "bloque", "bloques", "disponible", "disponibles", "venden", "catalogo"],
+      respuesta: "Estos son los productos con bloque abierto: {lista}. El próximo cierre es el {cierre}.",
+      respuesta_sin_datos: "Por ahora no hay bloques abiertos. Pronto publicaremos nuevos." },
+    { id: 5, tipo: "promociones", pregunta: "¿Hay promociones?", orden: 50, en_menu: true,
+      palabras_clave: ["promocion", "promociones", "descuento", "descuentos", "oferta", "ofertas", "cupon"],
+      respuesta: "Estas son las promociones vigentes: {lista}.",
+      respuesta_sin_datos: "Por ahora no tenemos promociones vigentes." },
+    { id: 6, tipo: "reservar", pregunta: "Quiero reservar", orden: 60, en_menu: true,
+      palabras_clave: ["reservar", "separar", "apartar", "quiero comprar", "quiero pedir"],
+      respuesta: "¿Cuál producto quieres reservar?",
+      respuesta_sin_datos: "Por ahora no hay bloques abiertos para reservar." },
+    { id: 7, tipo: "reclamo", pregunta: "Tengo un problema con mi pedido", orden: 70, en_menu: true,
+      palabras_clave: ["reclamo", "reclamar", "queja", "mal estado", "danado", "roto", "defectuoso", "incompleto", "no llego", "equivocado"],
+      respuesta: "Lamento lo ocurrido. Déjame tu nombre y celular y el equipo revisará tu caso.", respuesta_sin_datos: null },
+    { id: 8, tipo: "devolucion", pregunta: "Quiero una devolución", orden: 80, en_menu: false,
+      palabras_clave: ["devolucion", "devoluciones", "devolver", "devuelvan", "devuelvo", "reembolso", "mi dinero", "estafa", "estafadores", "fraude", "denuncia", "denunciar", "indecopi", "abogado", "demandar"],
+      respuesta: "Lamento lo ocurrido. Déjame tu nombre y celular y derivaré tu caso a Renato para que se comunique contigo.", respuesta_sin_datos: null },
+    { id: 9, tipo: "persona", pregunta: "Hablar con Renato", orden: 90, en_menu: true,
+      palabras_clave: ["una persona", "con alguien", "humano", "asesor", "renato", "hablar con", "atencion al cliente"],
+      respuesta: "Claro, te llevo a WhatsApp para que hables con Renato.", respuesta_sin_datos: null },
+  ],
+  productos: [
+    { nombre: "Cera de barbería Muk", precio: null, fecha_cierre: null },
+    { nombre: "Creatina Optimum Nutrition", precio: null, fecha_cierre: null },
+  ],
+  promociones: [],
+};

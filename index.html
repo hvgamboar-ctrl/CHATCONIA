@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chatbot BLOQE · Página de prueba</title>
+  <meta name="description" content="Página de prueba del chatbot de preguntas frecuentes de BLOQE.">
+  <style>
+    :root { --verde: #2e7d32; --texto: #333; --suave: #6b7378; --fondo: #fff; --borde: #e2e5e7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: var(--texto); background: var(--fondo); }
+    header { border-bottom: 3px solid var(--verde); padding: 18px 16px; }
+    .caja { max-width: 760px; margin: 0 auto; }
+    header strong { font-size: 20px; letter-spacing: .5px; }
+    header span { color: var(--suave); margin-left: 8px; }
+    main { padding: 32px 16px 120px; }
+    h1 { font-size: 28px; line-height: 1.25; margin: 0 0 12px; }
+    p { margin: 0 0 16px; }
+    .nota { background: #f5f7f8; border: 1px solid var(--borde); border-left: 4px solid var(--verde);
+      border-radius: 8px; padding: 14px 16px; }
+    ul { padding-left: 20px; } li { margin-bottom: 6px; }
+    footer { color: var(--suave); font-size: 14px; padding: 0 16px 40px; }
+  </style>
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+  <header><div class="caja"><strong>BLOQE</strong><span>Página de prueba del chatbot</span></div></header>
+  <main>
+    <div class="caja">
+      <h1>Compras colectivas, con atención al instante</h1>
+      <p>Esta es una página de prueba para el chatbot de preguntas frecuentes de BLOQE. Abre el chat con el botón de la esquina inferior derecha y prueba con tus propias palabras.</p>
+      <div class="nota">
+        <p><strong>Algunas ideas para probar:</strong></p>
+        <ul>
+          <li>¿Cuánto demora mi pedido?</li>
+          <li>¿Aceptan Yape?</li>
+          <li>¿Qué productos tienen ahora?</li>
+          <li>Quiero reservar</li>
+          <li>Mi pedido llegó en mal estado</li>
+          <li>Quiero hablar con una persona</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+  <footer><div class="caja">Prueba del chatbot · 180 Degrees Consulting Ulima</div></footer>
+
+  <script src="config.js"></script>
+  <script src="logica.js"></script>
+  <script src="datos-demo.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
