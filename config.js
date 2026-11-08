@@ -9,6 +9,6 @@ window.BLOQE_CONFIG = {
 
   // Datos de Supabase (Settings > API). Si quedan vacíos, el chat funciona en
   // modo demostración con datos de ejemplo y no guarda nada en Supabase.
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: "",
+  SUPABASE_URL: "https://blzebleyxpwsocnkvhwl.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_vPX3DoI4IkG2qoKOoU79qw_zN6n4d9L",
 };
