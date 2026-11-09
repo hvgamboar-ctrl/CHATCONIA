@@ -1,8 +1,15 @@
 # Chatbot de preguntas frecuentes de BLOQE (página de prueba)
 
-Página estática con el chat de preguntas frecuentes, sin IA. Funciona sola en
-**modo demostración** (con datos de ejemplo) y se conecta a Supabase cuando se
-completan dos datos en `config.js`.
+Página estática con el chat de preguntas frecuentes. Funciona sola en
+**modo demostración** (con datos de ejemplo), se conecta a Supabase cuando se
+completan dos datos en `config.js`, y puede responder con IA si se despliega la
+Edge Function (ver más abajo).
+
+**El chat funciona en dos niveles.** Los botones del menú y las preguntas que
+calzan con una sola palabra clave se responden sin IA: instantáneo y gratis.
+Solo cuando el cliente escribe algo que no calza con ninguna pregunta, o que
+calza con varias, entra la IA. Si la IA falla, se agota el presupuesto de la
+sesión o no está desplegada, el chat vuelve solo al modo de palabras clave.
 
 ## Archivos
 
@@ -15,6 +22,8 @@ completan dos datos en `config.js`.
 | `config.js` | **Lo único que hay que completar** (WhatsApp y Supabase). |
 | `chat_faq.sql` | Tablas, vistas, función de registro y preguntas iniciales para Supabase. |
 | `datos_prueba.sql` | Productos, bloques y promociones de ejemplo, solo para un proyecto de prueba. |
+| `chat_ia.sql` | Capa de IA: presupuesto por visita y funciones que usa la Edge Function. |
+| `chat-ia.ts` | Código de la Edge Function. **No se ejecuta desde la página**: se pega en Supabase. |
 
 ## Publicarla con GitHub Pages
 
@@ -56,6 +65,48 @@ tocar los datos reales de BLOQE.
 Qué debes ver: 8 preguntas como botones, dos productos con precio y la fecha de
 cierre más próxima, una sola promoción (las otras dos de ejemplo están vencida y
 apagada a propósito) y el bloque cerrado fuera de la lista.
+
+## Activar la IA
+
+La clave de la IA **no puede ir en la página**: cualquiera la vería. Vive en una
+Edge Function de Supabase, que es la única que habla con el modelo.
+
+1. **SQL Editor:** corre `chat_ia.sql` completo. Es aditivo: no toca las tablas
+   ni la función `registrar_conversacion` que ya existen.
+2. **Edge Functions → Deploy a new function → Via Editor.** Nómbrala `chat-ia`
+   y pega el contenido de `chat-ia.ts`.
+3. **Apaga la verificación de JWT** de esa función (en su pestaña de detalle).
+   Sin esto la página recibe un 401: las claves nuevas `sb_publishable_...` no
+   son JWT y la plataforma no puede validarlas. Lo que protege la función es el
+   presupuesto por visita de `chat_ia.sql` y `ORIGEN_PERMITIDO`.
+4. **Secrets de Edge Functions:**
+
+   | Secret | Valor |
+   |---|---|
+   | `IA_PROVEEDOR` | `gemini` o `claude` |
+   | `GEMINI_API_KEY` | de Google AI Studio, si usas Gemini |
+   | `ANTHROPIC_API_KEY` | de la consola de Claude, si usas Claude |
+   | `IA_MODELO` | opcional; confirma el nombre exacto en la consola del proveedor |
+   | `ORIGEN_PERMITIDO` | `https://TU-USUARIO.github.io` |
+   | `IA_MAX_POR_HORA` | opcional, por defecto 10 |
+   | `IA_MAX_POR_SESION` | opcional, por defecto 40 |
+
+5. En `config.js`, `IA_FUNCION` debe decir `chat-ia`. Para apagar la IA y volver
+   al chat de solo palabras clave, déjalo vacío (`""`).
+
+Para probarlo, escribe algo que no calce con ninguna pregunta (por ejemplo
+"¿tienen local en Arequipa?"). Abre la consola del navegador: cada respuesta de
+la IA imprime el modelo y los tokens. En Supabase, `select fuente, tipo,
+count(*) from chat_conversaciones group by 1,2` muestra qué resolvió cada capa.
+
+**Cuidado con el tier gratis de Gemini:** Google usa el contenido de la cuota
+gratuita para mejorar sus productos y revisores humanos pueden leerlo. Sirve
+para probar con datos inventados, no para los mensajes reales de los clientes
+de BLOQE. Para eso hay que pasar al tier pagado.
+
+Nota: la IA nunca recibe el nombre ni el celular del cliente. Cuando detecta un
+reclamo o una devolución, abre el formulario de la página y esos datos se
+guardan por `registrar_conversacion`, igual que antes.
 
 ## Conectarla al Supabase real de BLOQE
 

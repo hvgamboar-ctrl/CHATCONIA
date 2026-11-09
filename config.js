@@ -11,4 +11,9 @@ window.BLOQE_CONFIG = {
   // modo demostración con datos de ejemplo y no guarda nada en Supabase.
   SUPABASE_URL: "https://blzebleyxpwsocnkvhwl.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_vPX3DoI4IkG2qoKOoU79qw_zN6n4d9L",
+
+  // Nombre de la Edge Function que responde con IA. Déjalo vacío ("") para
+  // apagar la IA: el chat vuelve a funcionar solo con palabras clave, igual
+  // que antes. La clave de la IA vive en la función, nunca aquí.
+  IA_FUNCION: "chat-ia",
 };

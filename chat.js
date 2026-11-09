@@ -4,10 +4,12 @@
 (function () {
   var L = window.ChatLogica;
   var CFG = Object.assign(
-    { RENATO_WHATSAPP: "", ADELANTO_SOLES: 20, SUPABASE_URL: "", SUPABASE_ANON_KEY: "" },
+    { RENATO_WHATSAPP: "", ADELANTO_SOLES: 20, SUPABASE_URL: "", SUPABASE_ANON_KEY: "", IA_FUNCION: "" },
     window.BLOQE_CONFIG || {}
   );
   var DEMO = !(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+  // La IA solo entra con Supabase configurado y una función puesta en config.
+  var IA = !DEMO && !!CFG.IA_FUNCION;
 
   var TEXTOS = {
     nombre: "Asistente BLOQE",
@@ -17,6 +19,7 @@
       "y te ayudo con plazos, pagos, productos, promociones y reservas.",
     sinRespuesta:
       "No encontré una respuesta a eso. Puedes elegir una de las preguntas de abajo o hablar directamente con Renato.",
+    iaPensando: "Déjame revisarlo…",
     varias: "No estoy seguro de qué necesitas. ¿Te refieres a alguna de estas?",
     casoRegistrado: "Listo, registré tu caso. El equipo de BLOQE lo revisará y se comunicará contigo.",
     casoError: "No pude registrar tu caso en este momento. Escríbenos por WhatsApp y lo vemos ahí.",
@@ -65,6 +68,7 @@
           console.info("[demo] registro:", r);
           return Promise.resolve(true);
         },
+        ia: function () { return Promise.resolve(null); },
       }
     : {
         faqs: function () {
@@ -87,6 +91,29 @@
               p_respuesta: r.respuesta || null, p_nombre: r.nombre || null, p_celular: r.celular || null,
             }),
           }).then(function () { return true; }, function () { return false; });
+        },
+        // Llama a la Edge Function. Es el único camino con IA, y la clave de
+        // la IA no pasa por aquí: vive en la función.
+        ia: function (mensaje, historial) {
+          var base = CFG.SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/" + CFG.IA_FUNCION;
+          return fetch(base, {
+            method: "POST",
+            // Solo apikey: la clave publishable no es un JWT y no va como Bearer.
+            headers: { apikey: CFG.SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sesion_id: sessionId,
+              mensaje: String(mensaje).slice(0, 500),
+              historial: historial || [],
+            }),
+          }).then(function (r) {
+            return r.text().then(function (t) {
+              var d = null;
+              try { d = t ? JSON.parse(t) : null; } catch (e) { d = null; }
+              // 502/503/límite vienen con respaldo:true y los trata el llamador.
+              if (!r.ok && !(d && (d.respaldo || d.respuesta))) throw new Error("IA " + r.status);
+              return d;
+            });
+          });
         },
       };
 
@@ -135,6 +162,12 @@
   raiz.appendChild(globo); raiz.appendChild(lanzador); raiz.appendChild(panel);
 
   var faqs = [], pendiente = null, ocupado = false, cargado = false, indicador = null;
+  // Últimos turnos, para que la IA entienda un "y cuánto cuesta?" suelto.
+  var historial = [];
+  function recordar(rol, texto) {
+    historial.push({ rol: rol, texto: String(texto).slice(0, 500) });
+    if (historial.length > 12) historial = historial.slice(-12);
+  }
 
   function bajar() { lista.scrollTop = lista.scrollHeight; }
   function bloquear(v) {
@@ -146,11 +179,13 @@
   }
 
   function clienteDice(t) {
+    recordar("cliente", t);
     lista.insertBefore(el("div", { class: "bq-fila-msg bq-der" }, [el("div", { class: "bq-cliente", text: t })]), indicador);
     bajar();
   }
   function botDice(t, extra) {
     extra = extra || {};
+    recordar("bot", t);
     var bloque = el("div", { class: "bq-fila-msg bq-izq" }, [el("div", { class: "bq-bot", text: t })]);
     (extra.botones || []).forEach(function (b) {
       var btn = el("button", { type: "button", class: "bq-opcion", text: b.etiqueta });
@@ -242,6 +277,58 @@
     clienteDice(faq.pregunta); responderFaq(faq);
   }
 
+  // Camino de siempre, sin IA: es también el respaldo cuando la IA falla o
+  // cuando se agotó el presupuesto de la sesión.
+  function respaldoFaq(t, c) {
+    if (c.length === 0) {
+      botDice(TEXTOS.sinRespuesta, { wa: { mensaje: "Hola! Tengo una consulta: " + t.slice(0, 200), etiqueta: "Hablar con Renato por WhatsApp" } });
+      registrar("sin_respuesta", t, null);
+    } else {
+      botDice(TEXTOS.varias, { botones: c.map(function (f) {
+        return { etiqueta: f.pregunta, alPulsar: function () { clienteDice(f.pregunta); responderFaq(f, t); } };
+      }) });
+    }
+  }
+
+  // Mensajes de WhatsApp según por qué derivó la IA.
+  function waPorMotivo(motivo, t) {
+    if (motivo === "reservar") {
+      return { mensaje: "Hola! Quiero reservar un producto. Mi adelanto es S/ " + CFG.ADELANTO_SOLES + ".", etiqueta: "Reservar por WhatsApp" };
+    }
+    if (motivo === "hablar_con_renato") {
+      return { mensaje: "Hola! Quisiera hablar con una persona de BLOQE.", etiqueta: "Hablar con Renato por WhatsApp" };
+    }
+    return { mensaje: "Hola! Tengo una consulta: " + String(t).slice(0, 200), etiqueta: "Hablar con Renato por WhatsApp" };
+  }
+
+  function responderIA(t, c) {
+    bloquear(true);
+    // La función agrega el mensaje actual por su cuenta; aquí va lo anterior.
+    var previos = historial.slice(0, -1).slice(-6);
+    datos.ia(t, previos).then(function (d) {
+      bloquear(false);
+      // Sin respuesta útil, o la función pidió respaldo: camino de siempre.
+      if (!d || !d.respuesta) return respaldoFaq(t, c);
+      if (d.respaldo && d.fuente !== "limite") return respaldoFaq(t, c);
+
+      console.info("[ia]", d.modelo || "", d.tipo || "", d.tokens || "");
+
+      if (d.formulario === "reclamo" || d.formulario === "devolucion") {
+        // El nombre y el celular los recoge este formulario y se guardan por
+        // registrar_conversacion, sin pasar por la IA.
+        botDice(d.respuesta);
+        pendiente = { tipo: d.formulario, pregunta: t };
+        mostrarForm(true);
+        return;
+      }
+      if (d.whatsapp) return botDice(d.respuesta, { wa: waPorMotivo(d.whatsapp, t) });
+      botDice(d.respuesta);
+    }, function () {
+      bloquear(false);
+      respaldoFaq(t, c);
+    });
+  }
+
   barra.addEventListener("submit", function (e) {
     e.preventDefault();
     var t = entrada.value.trim();
@@ -249,16 +336,13 @@
     entrada.value = "";
     clienteDice(t);
     var c = L.elegirFaqs(t, faqs);
-    if (c.length === 0) {
-      botDice(TEXTOS.sinRespuesta, { wa: { mensaje: "Hola! Tengo una consulta: " + t.slice(0, 200), etiqueta: "Hablar con Renato por WhatsApp" } });
-      registrar("sin_respuesta", t, null);
-    } else if (c.length === 1) {
-      responderFaq(c[0], t);
-    } else {
-      botDice(TEXTOS.varias, { botones: c.map(function (f) {
-        return { etiqueta: f.pregunta, alPulsar: function () { clienteDice(f.pregunta); responderFaq(f, t); } };
-      }) });
-    }
+
+    // Una sola coincidencia: respuesta determinística y gratis, como antes.
+    if (c.length === 1) return responderFaq(c[0], t);
+
+    // Sin coincidencia o ambigua: justo donde la IA aporta.
+    if (IA) return responderIA(t, c);
+    respaldoFaq(t, c);
   });
 
   form.addEventListener("submit", function (e) {
